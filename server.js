@@ -1,47 +1,44 @@
 
 const http = require('http');
-//const url = require('url');
+const url = require('url');
+const fs = require('fs');
 
-//incoming request for HTTP
-http.createServer((request, response) => 
-    {response.writeHead(200, {'Content-Type': 'Text/plain'}); 
-    response.end('Hello Node!\n');
-});
+// Incoming request for HTTP
+http.createServer((request, response) => {
+    let addr = request.url, // allows to get the url from the parameters
+    q = url.parse(addr, true) // stored the parsed URL from user
+    filePath = ''; // here will be the filpath stored with an if-else statement
 
-
-//incoming request data for url
-url.createServer((request, response) => {
-    let addr = request.url,
-    q = url.parse(addr, true),
-    filePath = '';
-
-    //adding the request for the log.txt
-    fs.appendFile('log.txt', 'URL:' + addr + '\nTimestamp: ' + new Date() +
-    '\n\n', (err) => {
+    // This function takes 3 arguments, 1. file name where info will be added 2. the new information
+    // to be added and 3. an error-handling function
+    fs.appendFile('log.txt', 'URL: ' + addr + '\nTimestamp: ' +
+    new Date() + '\n\n', (err) => {
         if (err) {
             console.log(err);
-        } else {
+        } 
+        else {
             console.log('Added to log.');
         }
     });
 
-    if (q.pathname.includes('documentation')) {
-        filePath = (__dirname + '/documentation.html');
-    } else {
-        filePath = 'index.html';
+    // If-else statement to store the information on the filePath var declared earlier
+    if (q.pathname.includes('documentation')) //exact pathname of the URL 
+    {
+    filePath = (__dirname + '/documentation.html');
+    }
+    else {
+    filePath = 'index.html';
     }
 
-    //adding file-system module to log the request url
     fs.readFile(filePath, (err, data) => {
         if (err) {
             throw err;
         }
 
-        response.writeHead(200, {'Content-Type': 'text/html'});
+        response.writeHead(200, { 'Content-Type': 'text/html'});
         response.write(data);
         response.end();
     });
-    
-}).listen(8080);
 
-console.log('My first Node test server is running on Port 8080');
+}).listen(8080);
+console.log('My test server is running on Port 2020.');
