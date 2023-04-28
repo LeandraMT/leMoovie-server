@@ -1,53 +1,88 @@
+const bodyParser = require('body-parser');
 const express = require('express');
-    morgan = require('morgan');
-
+const morgan = require('morgan');
+const uuid = require('uuid');
 const app = express();
 
 
+app.use(bodyParser.json());
 app.use(morgan('common'));
 app.use(express.static('Public'));
 
-//creating the JSON object with top 10 movies
-let topTenMovies = [
+let users = [
     {
-        title: 'Titanic'
+        id: 1,
+        name: 'Dave',
+        favouriteMovies: []
     },
     {
-        title: 'Shark Tale'
+        id: 2,
+        name: 'Emma',
+        favouriteMovies: ['Titanic']
+    }
+]
+
+let movies = [
+    {
+        'Title': 'Titanic',
+        'Description': 'A seventeen-year-old aristocrat falls in love with a kind but poor artist. Based on the discovery of the ship by American oceanographer Doctor Robert Ballard.',
+        'Genre': {
+            'Name':'Drama, Romance'
+        },
+        'ImageURL': 'https://picfiles.alphacoders.com/140/140026.jpg',
+        'Director': {
+            'Name':'James Cameron',
+            'Bio': 'James Cameron is a Canadian filmmaker known for his innovative use of novel technologies in film. He was born on August 16, 1954 in Kapuskasing, Ontario, Canada, and later moved to the United States in 1971.'
+        }
     },
     {
-        title: 'Encanto'
+        'Title': 'Encanto',
+        'Description': 'A Colombian teenage girl has to face the frustration of being the only member of her family without magical powers. But when she discovers that the magic surrounding the Encanto is in danger, Mirabel decides that she, the only ordinary Madrigal, might just be her exceptional family`s last hope.',
+        'Genre': {
+            'Name': 'Animation, Fantasy, Musical'
+        },
+        'ImageURL': 'https://i1.wp.com/thechicagoedge.com/wp-content/uploads/2021/07/Encanto.jpg?resize=1024%2C541&ssl=1',
+        'Director': {
+            'Name':'Jared Bush',
+            'Bio': 'Jared Bush was born on June 12, 1974 in Gaithersburg, Maryland, USA. He is a writer and producer, known for Zootopia (2016), Encanto (2021) and Moana (2016). He is married to Pamela McDonald. They have three children.'
+        }
     },
     {
-        title: 'Murder Mystery 2'
-    },
-    {
-        title: 'Queens on the Run'
-    },
-    {
-        title: 'Miracles from Heaven'
-    },
-    {
-        title: 'The Wolf of Wall Street'
-    },
-    {
-        title: 'The Hunger Games'
-    },
-    {
-        title: 'White Chicks'
-    },
-    {
-        title: 'Escape Room'
+        'Title': 'The Wolf of Wall Street',
+        'Description': 'Based on the true story of Jordan Belfort, from his rise to a wealthy stock-broker living the high life to his fall involving crime, corruption and the federal government.',
+        'Genre': {
+            'Name': 'Biography, Crime'
+        },
+        'ImageURL': 'https://vignette.wikia.nocookie.net/cinemorgue/images/c/c7/The_Wolf_of_Wall_Street_2013.jpg/revision/latest?cb=20170223001424',
+        'Director': {
+            'Name':'Martin Scorsese',
+            'Bio': 'Martin Charles Scorsese was born on November 17, 1942 in Queens, New York City. Martin Charles Scorsese was born on November 17, 1942 in Queens, New York City.'
+        }
     }
 ];
 
+
+//READ
 app.get('/', (req, res) => {
     res.send('Welcome to leMoovie!');
 });
 
 app.get('/movies', (req, res) => {
-    res.json(topTenMovies);
+    res.status(200).json(movies);
 });
+
+app.get('/movies/:title', (req, res) => {
+    let title = req.params.title;
+    let movie = movies.find( movie => movie.Title === title );
+
+    if (movie) {
+        res.status(200).json(movies);
+    }
+    else {
+        res.status(400).send('Could not find such movie')
+    }
+});
+
 
 
 //creating the error-handling middleware function
@@ -55,3 +90,5 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Oops, something went wrong...')
 })
+
+app.listen(8080, () => console.log('Listening on port 8080'));
