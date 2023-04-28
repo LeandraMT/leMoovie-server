@@ -71,9 +71,14 @@ app.get('/movies', (req, res) => {
     res.status(200).json(movies);
 });
 
-app.get('/movies/:title', (req, res) => {
+app.get('/movies/:Title', (req, res) => {
+    res.json(movies.find((movies) => {
+        return movie.Title === req.params.Title
+    }));
+});
+/*app.get('/movies/:title', (req, res) => {
     let title = req.params.title;
-    let movie = movies.find( movie => movie.Title === title );
+    let movie = movies.find( movies => movie.Title === title );
 
     if (movie) {
         res.status(200).json(movies);
@@ -81,7 +86,12 @@ app.get('/movies/:title', (req, res) => {
     else {
         res.status(400).send('Could not find such movie')
     }
-});
+});*/
+
+app.get('/movies/:genre/:genreName', (req, res) => {
+    let genreName = req.params.genreName;
+    let genre = movies.find( movie => movie.Genre === genreName).Genre;
+})
 
 
 
