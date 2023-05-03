@@ -80,7 +80,7 @@ app.post('/users/:id/:movieTitle', (req, res) => {
     const id = req.params.user;
     const movieTitle = req.params.movieTitle;
 
-    let user = users.find( users => user.id == id );
+    let user = users.find( user => user.id == id );
 
     if (user) {
         user.favouriteMovies.push(title);
@@ -99,7 +99,7 @@ app.put('/users/:id', (req, res) => {
     const id = req.params.user;
     const updatedUser = req.body;
 
-    let user = users.find( users => user.id == id );
+    let user = users.find( user => user.id == id );
 
     if (user) {
         user.name = updatedUser.name;
@@ -125,11 +125,11 @@ app.get('/movies', (req, res) => {
 
 
 app.get('/movies/:Title', (req, res) => {
-    const title = req.params.title;
-    const movie = movies.find( movies => movie.Title === title );
+    const title = req.params.Title;
+    const movie = movies.find( movie => movie.Title === title );
 
     if (movie) {
-        res.status(200).json(movies);
+        res.status(200).json(movie);
     }
     else {
         res.status(400).send('Could not find such movie')
@@ -167,10 +167,10 @@ app.get('/movies/:directors/:directorName', (req, res) => {
 
 //DELETE
 app.delete('/users/:id/:movieTitle', (req, res) => {
-    const id = req.params.user;
+    const id = req.params.id;
     const movieTitle = req.params.movieTitle;
 
-    let user = users.find( users => user.id == id );
+    let user = users.find( user => user.id == id );
 
     if (user) {
         user.favouriteMovies = user.favouriteMovies.filter( title => title !== movieTitle);
@@ -183,10 +183,9 @@ app.delete('/users/:id/:movieTitle', (req, res) => {
 
 
 app.delete('/users/:id', (req, res) => {
-    const id = req.params.user;
-    const movieTitle = req.params.movieTitle;
+    const id = req.params.id;
 
-    let user = users.find( users => user.id == id );
+    let user = users.find( user => user.id == id );
 
     if (user) {
         users = users.filter( user => user.id != id);
