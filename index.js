@@ -27,7 +27,7 @@ let movies = [
         'Title': 'Titanic',
         'Description': 'A seventeen-year-old aristocrat falls in love with a kind but poor artist. Based on the discovery of the ship by American oceanographer Doctor Robert Ballard.',
         'Genre': {
-            'Name':'Drama, Romance'
+            'Name':'Drama'
         },
         'ImageURL': 'https://picfiles.alphacoders.com/140/140026.jpg',
         'Director': {
@@ -62,6 +62,7 @@ let movies = [
 ];
 
 
+
 //CREATE
 app.post('/users', (req, res) => {
     const newUser = req.body;
@@ -69,34 +70,75 @@ app.post('/users', (req, res) => {
     if (newUser.name) {
         newUser.id = uuid.v4();
         users.push(newUser);
-        res.status(201).json(newUser);
+        res.status(201).json(newUser)
     }
     else {
-        res.status(400).send('Users must need names')
+        res.status(400).send('Users must need names.')
     }
-});
+})
 
 app.post('/users/:id/:movieTitle', (req, res) => {
-    const id = req.params.user;
-    const movieTitle = req.params.movieTitle;
+    const { id, movieTitle } = req.params;
 
     let user = users.find( user => user.id == id );
 
     if (user) {
-        user.favouriteMovies.push(title);
-        res.status(200).send(`${movieTitle} has been added to user's ${id} favourite list.`);
+        user.favouriteMovies.push(movieTitle);
+        res.status(200).send(`${movieTitle} has been added to user ${id}'s favourite list.`)
     }
     else {
-        res.status(400).send('Could not find such User')
+        res.status(400).send('Could not find user.')
     }
-});
+})
 
+
+
+//READ 
+app.get('/movies', (req, res) => {
+    res.status(200).json(movies);
+})
+
+app.get('/movies/:title', (req, res) => {
+    const { title } = req.params;
+    const movie = movie.find( movie => movie.Title === title );
+
+    if (movie) {
+        res.status(200).json(movie);
+    }
+    else {
+        res.status(404).send('Could not find movie');
+    }
+})
+
+app.get('/movies/genre/:genreName', (req, res) => {
+    const { genreName } = req.params;
+    const genre = movies.find( movie => movie.Genre.Name === genreName ).Genre;
+
+    if (genre) {
+        res.status(200).json(genre);
+    }
+    else {
+        res.status(404).send('Could not find genre');
+    }
+})
+
+app.get('/movies/directors/:directorName', (req, res) => {
+    const { directorName } = req.params;
+    const director = movies.find( movie => movie.Director.Name === directorName ).Director;
+
+    if (genre) {
+        res.status(200).json(director);
+    }
+    else {
+        res.status(404).send('Could not find Director');
+    }
+})
 
 
 
 //UPDATE
 app.put('/users/:id', (req, res) => {
-    const id = req.params.user;
+    const { id } = req.params;
     const updatedUser = req.body;
 
     let user = users.find( user => user.id == id );
@@ -106,105 +148,38 @@ app.put('/users/:id', (req, res) => {
         res.status(200).json(user);
     }
     else {
-        res.status(400).send('Could not find such User')
+        res.status(400).send('Could not find user.')
     }
-});
-
-
-
-
-//READ
-app.get('/', (req, res) => {
-    res.send('Welcome to leMoovie!');
-});
-
-
-app.get('/movies', (req, res) => {
-    res.status(200).json(movies);
-});
-
-
-app.get('/movies/:Title', (req, res) => {
-    const title = req.params.Title;
-    const movie = movies.find( movie => movie.Title === title );
-
-    if (movie) {
-        res.status(200).json(movie);
-    }
-    else {
-        res.status(400).send('Could not find such movie')
-    }
-});
-
-
-app.get('/movies/:genre/:genreName', (req, res) => {
-    const genreName = req.params.genreName;
-    const genre = movies.find( movie => movie.Genre.Name === genreName).Genre;
-
-    if (genre) {
-        res.status(200).json(genre);
-    }
-    else {
-        res.status(400).send('Could not find such genre')
-    }
-});
-
-
-app.get('/movies/:directors/:directorName', (req, res) => {
-    const directorName = req.params.directorName;
-    const director = movies.find( movie => movie.Director.Name === directorName).Director;
-
-    if (director) {
-        res.status(200).json(director);
-    }
-    else {
-        res.status(400).send('Could not find Director')
-    }
-});
-
-
+})
 
 
 //DELETE
 app.delete('/users/:id/:movieTitle', (req, res) => {
-    const id = req.params.id;
-    const movieTitle = req.params.movieTitle;
+    const { id, movieTitle } = req.params;
 
     let user = users.find( user => user.id == id );
 
     if (user) {
-        user.favouriteMovies = user.favouriteMovies.filter( title => title !== movieTitle);
-        res.status(200).send(`${movieTitle} has been removed from user's ${id} favourite list.`);
+        user.favouriteMovies = user.favouriteMovies.filter( title => title !== movieTitle );
+        res.status(200).send(`${movieTitle} has been removed from user ${id}'s favourite list.`)
     }
     else {
-        res.status(400).send('Could not find such User')
+        res.status(400).send('Could not find user.')
     }
-});
-
+})
 
 app.delete('/users/:id', (req, res) => {
-    const id = req.params.id;
+    const { id } = req.params;
 
     let user = users.find( user => user.id == id );
 
     if (user) {
-        users = users.filter( user => user.id != id);
+        users = users.filter( user => user.id != id );
         res.status(200).send(`User ${id} has been deleted.`);
     }
     else {
-        res.status(400).send('Could not find such User')
+        res.status(400).send('Could not find user.')
     }
-});
-
-
-
-
-
-
-//creating the error-handling middleware function
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Oops, something went wrong...')
 })
 
 app.listen(8080, () => console.log('Listening on port 8080'));
