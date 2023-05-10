@@ -100,7 +100,7 @@ app.get('/movies', (req, res) => {
 
 app.get('/movies/:title', (req, res) => {
     const { title } = req.params;
-    const movie = movie.find( movie => movie.Title === title );
+    const movie = movies.find( (movie) => movie.Title === title );
 
     if (movie) {
         res.status(200).json(movie);
@@ -126,7 +126,7 @@ app.get('/movies/directors/:directorName', (req, res) => {
     const { directorName } = req.params;
     const director = movies.find( movie => movie.Director.Name === directorName ).Director;
 
-    if (genre) {
+    if (director) {
         res.status(200).json(director);
     }
     else {
