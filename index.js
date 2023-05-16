@@ -4,182 +4,260 @@ const morgan = require('morgan');
 const uuid = require('uuid');
 const app = express();
 
+const mongoose = require('mongoose');
+const Models = require('./models.js');
+const Movies = Models.Movie;
+const Users = Models.User;
+
+
+async function connectToDatabase() {
+    try {
+        await mongoose.connect('mongodb://localhost:27017/cafoDB', { useNewUrlParser: true, useUnifiedTopology: true } );
+        console.log('Connected to MongoDB');
+    }
+    catch(error) {
+        console.error('Error connecting to MongoDB', error);
+    }
+}
+connectToDatabase();
 
 app.use(bodyParser.json());
 app.use(morgan('common'));
 app.use(express.static('Public'));
 
-let users = [
-    {
-        id: 1,
-        name: 'Dave',
-        favouriteMovies: []
-    },
-    {
-        id: 2,
-        name: 'Emma',
-        favouriteMovies: ['Titanic']
-    }
-]
-
-let movies = [
-    {
-        'Title': 'Titanic',
-        'Description': 'A seventeen-year-old aristocrat falls in love with a kind but poor artist. Based on the discovery of the ship by American oceanographer Doctor Robert Ballard.',
-        'Genre': {
-            'Name':'Drama'
-        },
-        'ImageURL': 'https://picfiles.alphacoders.com/140/140026.jpg',
-        'Director': {
-            'Name':'James Cameron',
-            'Bio': 'James Cameron is a Canadian filmmaker known for his innovative use of novel technologies in film. He was born on August 16, 1954 in Kapuskasing, Ontario, Canada, and later moved to the United States in 1971.'
-        }
-    },
-    {
-        'Title': 'Encanto',
-        'Description': 'A Colombian teenage girl has to face the frustration of being the only member of her family without magical powers. But when she discovers that the magic surrounding the Encanto is in danger, Mirabel decides that she, the only ordinary Madrigal, might just be her exceptional family`s last hope.',
-        'Genre': {
-            'Name': 'Animation, Fantasy, Musical'
-        },
-        'ImageURL': 'https://i1.wp.com/thechicagoedge.com/wp-content/uploads/2021/07/Encanto.jpg?resize=1024%2C541&ssl=1',
-        'Director': {
-            'Name':'Jared Bush',
-            'Bio': 'Jared Bush was born on June 12, 1974 in Gaithersburg, Maryland, USA. He is a writer and producer, known for Zootopia (2016), Encanto (2021) and Moana (2016). He is married to Pamela McDonald. They have three children.'
-        }
-    },
-    {
-        'Title': 'The Wolf of Wall Street',
-        'Description': 'Based on the true story of Jordan Belfort, from his rise to a wealthy stock-broker living the high life to his fall involving crime, corruption and the federal government.',
-        'Genre': {
-            'Name': 'Biography, Crime'
-        },
-        'ImageURL': 'https://vignette.wikia.nocookie.net/cinemorgue/images/c/c7/The_Wolf_of_Wall_Street_2013.jpg/revision/latest?cb=20170223001424',
-        'Director': {
-            'Name':'Martin Scorsese',
-            'Bio': 'Martin Charles Scorsese was born on November 17, 1942 in Queens, New York City. Martin Charles Scorsese was born on November 17, 1942 in Queens, New York City.'
-        }
-    }
-];
 
 
+app.get('/', (req, res) => {
+    res.send('Welcome to leMoovie!');
+});
 
-//CREATE
-app.post('/users', (req, res) => {
-    const newUser = req.body;
-
-    if (newUser.name) {
-        newUser.id = uuid.v4();
-        users.push(newUser);
-        res.status(201).json(newUser)
-    }
-    else {
-        res.status(400).send('Users must need names.')
-    }
-})
-
-app.post('/users/:id/:movieTitle', (req, res) => {
-    const { id, movieTitle } = req.params;
-
-    let user = users.find( user => user.id == id );
-
-    if (user) {
-        user.favouriteMovies.push(movieTitle);
-        res.status(200).send(`${movieTitle} has been added to user ${id}'s favourite list.`)
-    }
-    else {
-        res.status(400).send('Could not find user.')
-    }
-})
 
 
 
 //READ 
+
+//Get all users
+app.get('/users', (req, res) => {
+    Users.find()
+    .then( (users) => {
+        res.status(201).json(users);
+    })
+    .catch( (err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
+
+//Get user by username
+app.get('/users/:Username', (req, res) => {
+    Users.findOne( { Username: req.params.Username} )
+    .then((user) => {
+        if(!user) {
+            return res.status(404).send(req.params.Username + ' was not found.');
+        }
+        else {
+            res.json(user);
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error ' + err);
+    });
+});
+
+
+//Get all movies
 app.get('/movies', (req, res) => {
-    res.status(200).json(movies);
-})
+    Movies.find()
+    .then( (movies) => {
+        res.status(201).json(movies);
+    })
+    .catch( (err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
 
-app.get('/movies/:title', (req, res) => {
-    const { title } = req.params;
-    const movie = movies.find( (movie) => movie.Title === title );
+//Get movie by title
+app.get('/movies/title/:Title', (req, res) => {
+    Movies.findOne( {Title: req.params.Title} )
+    .then((movie) => {
+        if(movies) {
+            return res.status(404).send(req.params.Title + ' was not found.')
+        }
+        else {
+            res.status(200).json(movie);
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
 
-    if (movie) {
-        res.status(200).json(movie);
-    }
-    else {
-        res.status(404).send('Could not find movie');
-    }
-})
+//Get movie by genre
+app.get('/movies/genre/:Genre', (req, res) => {
+    Movies.findOne( {'Genre.Name': req.params.Genre} )
+    .then((movies) => {
+        if(movies.length == 0) {
+            return res.status(404).send('There are no movies found with the' + req.params.Genre + ' genre type.');
+        }
+        else {
+            res.status(200).json(movies);
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
 
-app.get('/movies/genre/:genreName', (req, res) => {
-    const { genreName } = req.params;
-    const genre = movies.find( movie => movie.Genre.Name === genreName ).Genre;
+//Get movie by director name
+app.get('/movies/directors/:Director', (req, res) => {
+    Movies.find( {'Director.Name': req.params.Director} )
+    .then((movies) => {
+        if(movies.length == 0) {
+            return res.status(404).send('There are no movies found with the director ' + req.params.Director + ' name.');
+        }
+        else {
+            res.status(200).json(movies);
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
 
-    if (genre) {
-        res.status(200).json(genre);
-    }
-    else {
-        res.status(404).send('Could not find genre');
-    }
-})
 
-app.get('/movies/directors/:directorName', (req, res) => {
-    const { directorName } = req.params;
-    const director = movies.find( movie => movie.Director.Name === directorName ).Director;
 
-    if (director) {
-        res.status(200).json(director);
-    }
-    else {
-        res.status(404).send('Could not find Director');
-    }
-})
+
+//CREATE
+
+//New user
+app.post('/users', (req, res) => {
+    Users.findOne( {Username: req.body.Username} )
+    .then((user) => {
+        if(user){
+            return res.status(400).send(req.body.Username + ' already exists');
+        }
+        else {
+            Users.create({
+                Username: req.body.Username,
+                Password: req.body.Password,
+                Email: req.body.Email,
+                Birthday: req.body.Birthday
+            })
+            .then( (user) => {res.status(201).json(user)} )
+            .catch( (error) => {console.error(error)
+            res.status(500).send('Error: ' + error);
+            })
+        }
+    })
+    .catch( (error) => {
+        console.error(error);
+        res.status(500).send('Error: ' + error);
+    });
+});
+
+//Adding movie to user's  favourite list
+app.post('/users/:Username/movies/:MovieID', (req, res) => {
+    Users.findOneAndUpdate( { Username: req.params.Username },
+        {
+            $push: { FavouriteMovies: req.params.MovieID }
+        },
+        { new: true },
+        (err, updatedUser) => {
+            if(err) {
+                console.error(err);
+                res.status(500).send('Error ' + err);
+            }
+            else {
+                res.json(updatedUser);
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).send('Error: ' + err);
+        });
+});
+
 
 
 
 //UPDATE
-app.put('/users/:id', (req, res) => {
-    const { id } = req.params;
-    const updatedUser = req.body;
 
-    let user = users.find( user => user.id == id );
-
-    if (user) {
-        user.name = updatedUser.name;
-        res.status(200).json(user);
-    }
-    else {
-        res.status(400).send('Could not find user.')
-    }
-})
+//Updating user's information
+app.put('/users/:Username', (req, res) => {
+    Users.findOneAndUpdate( { Username: req.params.Username }, { $set: 
+        {
+            Username: req.body.Username,
+            Password: req.body.Password,
+            Email: req.body.Email,
+            Birthday: req.body.Birthday
+        }
+    },
+    { new: true },
+    (err, updatedUser) => {
+        if(err){
+            console.error(err);
+            res.status(500).send('Error ' + err);
+        }
+        else {
+            res.json(updatedUser);
+        }
+    } );
+});
 
 
 //DELETE
-app.delete('/users/:id/:movieTitle', (req, res) => {
-    const { id, movieTitle } = req.params;
 
-    let user = users.find( user => user.id == id );
+//Deleting movie from user's favourite list
+app.delete('/users/:Username/movies/:MovieID', (req, res) => {
+    Users.findOneAndUpdate( 
+        {
+            Username: req.params.Username
+        },
+        {
+            $pull: {FavouriteMovies: req.params.MovieID},
+        },
+        {
+            new: true
+        }
+    )
+    .then((updatedUser) => {
+        if(!updatedUser) {
+            return res.status(404).send('User was not found.');
+        }
+        else {
+            res.status(updatedUser);
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
+});
 
-    if (user) {
-        user.favouriteMovies = user.favouriteMovies.filter( title => title !== movieTitle );
-        res.status(200).send(`${movieTitle} has been removed from user ${id}'s favourite list.`)
-    }
-    else {
-        res.status(400).send('Could not find user.')
-    }
-})
+//Deleting user
+app.delete('/users/:Username', (req, res) => {
+    Users.findOneAndRemove( { Username: req.params.Username } )
+    .then((user) => {
+        if(!user) {
+            res.status(400).send(req.params.Username + ' was not found.');
+        }
+        else {
+            res.status(200).send(req.params.Username + ' has been deleted.');
+        }
+    })
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error ' + err);
+    });
+});
 
-app.delete('/users/:id', (req, res) => {
-    const { id } = req.params;
 
-    let user = users.find( user => user.id == id );
 
-    if (user) {
-        users = users.filter( user => user.id != id );
-        res.status(200).send(`User ${id} has been deleted.`);
-    }
-    else {
-        res.status(400).send('Could not find user.')
-    }
-})
 
-app.listen(8080, () => console.log('Listening on port 8080'));
+
+app.listen(8000, () => console.log('Listening on port 8000'));
