@@ -1,3 +1,4 @@
+const dotenv = require("dotenv")
 const bodyParser = require('body-parser');
 const express = require('express');
 const morgan = require('morgan');
@@ -5,15 +6,30 @@ const uuid = require('uuid');
 const app = express();
 
 const mongoose = require('mongoose');
-const Models = require('./models.js');
+const Models = require('./models');
 const Movies = Models.Movie;
 const Users = Models.User;
 
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(morgan('common'));
+app.use(express.static('Public'));
+dotenv.config();
+
+
+
+let auth = require('./auth') (app);
+const passport = require('passport');
+    require('./passport');
+
+
+
 async function connectToDatabase() {
     try {
-        await mongoose.connect('mongodb://localhost:27017/cafoDB', { useNewUrlParser: true, useUnifiedTopology: true } );
-        console.log('Connected to MongoDB');
+        await mongoose.connect(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true },
+            console.log('Connected to MongoDB') );
+        
     }
     catch(error) {
         console.error('Error connecting to MongoDB', error);
@@ -21,9 +37,7 @@ async function connectToDatabase() {
 }
 connectToDatabase();
 
-app.use(bodyParser.json());
-app.use(morgan('common'));
-app.use(express.static('Public'));
+
 
 
 
@@ -67,7 +81,7 @@ app.get('/users/:Username', (req, res) => {
 
 
 //Get all movies
-app.get('/movies', (req, res) => {
+app.get('/movies', /*passport.authenticate('jwt', {session: false}),*/ (req, res) => {
     Movies.find()
     .then( (movies) => {
         res.status(201).json(movies);
@@ -82,7 +96,7 @@ app.get('/movies', (req, res) => {
 app.get('/movies/title/:Title', (req, res) => {
     Movies.findOne( {Title: req.params.Title} )
     .then((movie) => {
-        if(movies) {
+        if(movie) {
             return res.status(404).send(req.params.Title + ' was not found.')
         }
         else {
@@ -97,10 +111,10 @@ app.get('/movies/title/:Title', (req, res) => {
 
 //Get movie by genre
 app.get('/movies/genre/:Genre', (req, res) => {
-    Movies.findOne( {'Genre.Name': req.params.Genre} )
+    Movies.find( {'Genre.Name': req.params.Genre} )
     .then((movies) => {
         if(movies.length == 0) {
-            return res.status(404).send('There are no movies found with the' + req.params.Genre + ' genre type.');
+            return res.status(404).send('There are no movies found with the ' + req.params.Genre + ' genre type.');
         }
         else {
             res.status(200).json(movies);
@@ -135,32 +149,46 @@ app.get('/movies/directors/:Director', (req, res) => {
 //CREATE
 
 //New user
-app.post('/users', (req, res) => {
-    Users.findOne( {Username: req.body.Username} )
-    .then((user) => {
-        if(user){
-            return res.status(400).send(req.body.Username + ' already exists');
-        }
-        else {
-            Users.create({
-                Username: req.body.Username,
-                Password: req.body.Password,
-                Email: req.body.Email,
-                Birthday: req.body.Birthday
-            })
-            .then( (user) => {res.status(201).json(user)} )
-            .catch( (error) => {console.error(error)
-            res.status(500).send('Error: ' + error);
-            })
-        }
-    })
-    .catch( (error) => {
-        console.error(error);
-        res.status(500).send('Error: ' + error);
-    });
+app.post('/users', async (req, res) => {
+    try {
+        const existingUser = Users.findOne( {Username: req.body.Username} )
+            if(existingUser) {
+                return res.status(400).json( {msg: 'User already exists.'} );
+            }
+                const user = await Users.create({
+                    Username: req.body.Username,
+                    Password: req.body.Password,
+                    Email: req.body.Email,
+                    Birthday: req.body.Birthday
+                })
+                res.status(201).json( {msg: 'User created', user} )
+    } 
+    catch (err) {
+        res.status(500).json( {msg: 'Something went wrong.', err} )
+    }
 });
 
-//Adding movie to user's  favourite list
+
+//Adding movie to user's favourite list
+/*app.post('/users/:Username/movies/MovieID', async (req, res) => {
+    try {
+        const movieAdded = await Users.findOneAndUpdate( 
+            { 
+                Username: req.body.Username
+            },
+            {
+                $push: { FavouriteMovies: req.body.MovieID }
+            },
+            {
+                new: true
+            }
+        )
+        res.status(200).json( {msg: req.body.MovieID + 'has been added to favourite list.', movieAdded})
+    } 
+    catch (err) {
+        res.status(500).json( {msg: 'Something went wrong', err} )
+    }
+});*/
 app.post('/users/:Username/movies/:MovieID', (req, res) => {
     Users.findOneAndUpdate( { Username: req.params.Username },
         {
@@ -188,25 +216,28 @@ app.post('/users/:Username/movies/:MovieID', (req, res) => {
 //UPDATE
 
 //Updating user's information
-app.put('/users/:Username', (req, res) => {
-    Users.findOneAndUpdate( { Username: req.params.Username }, { $set: 
-        {
-            Username: req.body.Username,
-            Password: req.body.Password,
-            Email: req.body.Email,
-            Birthday: req.body.Birthday
-        }
-    },
-    { new: true },
-    (err, updatedUser) => {
-        if(err){
-            console.error(err);
-            res.status(500).send('Error ' + err);
-        }
-        else {
-            res.json(updatedUser);
-        }
-    } );
+app.put('/users/:Username', async (req,res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            {
+                Username: req.body.Username
+            },
+            {
+                $set: {
+                    Username: req.body.Username,
+                    Password: req.body.Password,
+                    Email: req.body.Email,
+                    Birthday: req.body.Birthday
+                }
+            },
+            {
+                new: true
+            }
+        )
+        res.status(200).json( {msg: 'User ' + req.body.USernam + ' has been updated.', updatedUser})
+    } catch (err) {
+        res.status(500).json( {msg: 'Something went wrong', err} )
+    }
 });
 
 
