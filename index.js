@@ -21,7 +21,7 @@ dotenv.config();
 
 let auth = require('./auth') (app);
 const passport = require('passport');
-    require('./passport');
+        require('./passport');
 
 
 
@@ -81,7 +81,7 @@ app.get('/users/:Username', (req, res) => {
 
 
 //Get all movies
-app.get('/movies', /*passport.authenticate('jwt', {session: false}),*/ (req, res) => {
+app.get('/movies', passport.authenticate('jwt', {session: false}), (req, res) => {
     Movies.find()
     .then( (movies) => {
         res.status(201).json(movies);
@@ -149,10 +149,10 @@ app.get('/movies/directors/:Director', (req, res) => {
 //CREATE
 
 //New user
-app.post('/users', async (req, res) => {
+app.post('/users', passport.authenticate('jwt', {session: false}), async (req, res) => {
     try {
         const existingUser = Users.findOne( {Username: req.body.Username} )
-            if(existingUser) {
+            if(!existingUser) {
                 return res.status(400).json( {msg: 'User already exists.'} );
             }
                 const user = await Users.create({
