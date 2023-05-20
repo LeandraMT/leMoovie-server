@@ -149,7 +149,7 @@ app.get('/movies/directors/:Director', (req, res) => {
 //CREATE
 
 //New user
-app.post('/users', passport.authenticate('jwt', {session: false}), async (req, res) => {
+app.post('/users', passport.authenticate('jwt', {session: false}, auth), async (req, res) => {
     try {
         const existingUser = Users.findOne( {Username: req.body.Username} )
             if(!existingUser) {
