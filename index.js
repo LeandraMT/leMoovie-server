@@ -10,18 +10,21 @@ const Models = require('./models');
 const Movies = Models.Movie;
 const Users = Models.User;
 
+const cors = require('cors');
+let auth = require('./auth') (app);
+const passport = require('passport');
+                 require('./passport');
+const { check, validationResult } = require('express-validator');
 
+const port = process.env.PORT || 8000;
+
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan('common'));
 app.use(express.static('Public'));
 dotenv.config();
 
-
-
-let auth = require('./auth') (app);
-const passport = require('passport');
-        require('./passport');
 
 
 
@@ -149,7 +152,21 @@ app.get('/movies/directors/:Director', (req, res) => {
 //CREATE
 
 //New user
-app.post('/users', passport.authenticate('jwt', {session: false}, auth), async (req, res) => {
+app.post('/users', [
+    check('Username', 'Username is required').isLength({min: 5}),
+    check('Username', 'Username contains non-alphanumeric characters - not allowed.').isAlphanumeric(),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email does not appear to be valid').isEmail()
+],
+    passport.authenticate('jwt', {session: false}, auth), async (req, res) => {
+
+    let errors = validationResult(req);
+        if(!errors.isEmpty()){
+            return res.status(422).json( {errors: errors.array()} )
+        };
+
+    let hashedPassword = Users.hashPassword(req.body.Password);
+
     try {
         const existingUser = Users.findOne( {Username: req.body.Username} )
             if(!existingUser) {
@@ -291,4 +308,6 @@ app.delete('/users/:Username', (req, res) => {
 
 
 
-app.listen(8000, () => console.log('Listening on port 8000'));
+app.listen(port, '0.0.0.0', () => {
+    console.log('Listening on port ' + port);
+});

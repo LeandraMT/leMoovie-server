@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 
 
@@ -29,6 +30,16 @@ let userSchema = mongoose.Schema({
     FavouriteMovies: [ {type: mongoose.Schema.Types.ObjectId, ref: 'Movie'} ]
 });
 
+
+//Hashing the passwords
+userSchema.statics.hashPassword = (password) => {
+    return bcrypt.hashSync(password, 10);
+};
+
+userSchema.methods.validatePassword = function(password)
+{
+    return bcrypt.compareSync(password, this.Password);
+};
 
 
 //Creation of collections (db.movies and db.users) in the database
