@@ -26,9 +26,10 @@ app.use(express.static('Public'));
 dotenv.config();
 
 
+mongoose.createConnection(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true },
+    console.log('Connected to MongoDB'));
 
-
-async function connectToDatabase() {
+/*async function connectToDatabase() {
     try {
         await mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true },
             console.log('Connected to MongoDB') );
@@ -38,7 +39,7 @@ async function connectToDatabase() {
         console.error('Error connecting to MongoDB', error);
     }
 }
-connectToDatabase();
+connectToDatabase();*/
 
 
 
