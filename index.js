@@ -26,20 +26,8 @@ app.use(express.static('Public'));
 dotenv.config();
 
 
-mongoose.createConnection(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true },
+mongoose.connect(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true },
     console.log('Connected to MongoDB'));
-
-/*async function connectToDatabase() {
-    try {
-        await mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true },
-            console.log('Connected to MongoDB') );
-        
-    }
-    catch(error) {
-        console.error('Error connecting to MongoDB', error);
-    }
-}
-connectToDatabase();*/
 
 
 
@@ -67,7 +55,7 @@ app.get('/users', (req, res) => {
 });
 
 //Get user by username
-app.get('/users/:Username', (req, res) => {
+app.get('/users/:Username', passport.authenticate('jwt', {session: false}), (req, res) => {
     Users.findOne( { Username: req.params.Username} )
     .then((user) => {
         if(!user) {
@@ -159,7 +147,7 @@ app.post('/users', [
     check('Password', 'Password is required').not().isEmpty(),
     check('Email', 'Email does not appear to be valid').isEmail()
 ],
-    passport.authenticate('jwt', {session: false}, auth), async (req, res) => {
+    async (req, res) => {
 
     let errors = validationResult(req);
         if(!errors.isEmpty()){
@@ -175,57 +163,35 @@ app.post('/users', [
             }
                 const user = await Users.create({
                     Username: req.body.Username,
-                    Password: req.body.Password,
+                    Password: hashedPassword,
                     Email: req.body.Email,
                     Birthday: req.body.Birthday
                 })
                 res.status(201).json( {msg: 'User created', user} )
     } 
     catch (err) {
+        console.log(err);
         res.status(500).json( {msg: 'Something went wrong.', err} )
     }
 });
 
 
 //Adding movie to user's favourite list
-/*app.post('/users/:Username/movies/MovieID', async (req, res) => {
-    try {
-        const movieAdded = await Users.findOneAndUpdate( 
-            { 
-                Username: req.body.Username
-            },
-            {
-                $push: { FavouriteMovies: req.body.MovieID }
-            },
-            {
-                new: true
-            }
-        )
-        res.status(200).json( {msg: req.body.MovieID + 'has been added to favourite list.', movieAdded})
-    } 
-    catch (err) {
-        res.status(500).json( {msg: 'Something went wrong', err} )
-    }
-});*/
-app.post('/users/:Username/movies/:MovieID', (req, res) => {
-    Users.findOneAndUpdate( { Username: req.params.Username },
+app.post('/users/:Username/movies/:MovieID', async (req, res) => {
+    var result = await Users.findOneAndUpdate( 
+        { 
+            Username: req.params.Username 
+        },
         {
             $push: { FavouriteMovies: req.params.MovieID }
         },
-        { new: true },
-        (err, updatedUser) => {
-            if(err) {
-                console.error(err);
-                res.status(500).send('Error ' + err);
-            }
-            else {
-                res.json(updatedUser);
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send('Error: ' + err);
-        });
+        { new: true, rawResult: true }
+    )
+    res.json( result)
+    .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+    });
 });
 
 
@@ -252,7 +218,7 @@ app.put('/users/:Username', async (req,res) => {
                 new: true
             }
         )
-        res.status(200).json( {msg: 'User ' + req.body.USernam + ' has been updated.', updatedUser})
+        res.status(200).json( {msg: 'User ' + req.body.Username + ' has been updated.', updatedUser})
     } catch (err) {
         res.status(500).json( {msg: 'Something went wrong', err} )
     }

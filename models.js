@@ -33,6 +33,10 @@ let userSchema = mongoose.Schema({
 
 //Hashing the passwords
 userSchema.statics.hashPassword = (password) => {
+    if(password === undefined || password === null) {
+        console.log('Password is undefined.')
+    return;
+    }
     return bcrypt.hashSync(password, 10);
 };
 
