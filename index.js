@@ -1,8 +1,10 @@
 const dotenv = require("dotenv")
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const express = require('express');
 const morgan = require('morgan');
 const uuid = require('uuid');
+const { check, validationResult } = require('express-validator');
 const app = express();
 
 const mongoose = require('mongoose');
@@ -10,14 +12,7 @@ const Models = require('./models');
 const Movies = Models.Movie;
 const Users = Models.User;
 
-const cors = require('cors');
-let auth = require('./auth') (app);
-const passport = require('passport');
-                 require('./passport');
-const { check, validationResult } = require('express-validator');
-
-const port = process.env.PORT || 8000;
-
+//Middlewares
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
@@ -26,6 +21,14 @@ app.use(express.static('Public'));
 dotenv.config();
 
 
+//Local auth and passport file
+const auth = require('./auth')(app);
+const passport = require('passport');
+require('./passport');
+
+
+const port = process.env.PORT || 8000;
+
 mongoose.connect(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true },
     console.log('Connected to MongoDB'));
 
@@ -33,33 +36,37 @@ mongoose.connect(process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopolo
 
 
 
+//Welcome message for homepage
 app.get('/', (req, res) => {
     res.send('Welcome to leMoovie!');
 });
 
 
 
+//ENDPOINTS:
 
 //READ 
 
 //Get all users
-app.get('/users', (req, res) => {
+app.get('/users', passport.authenticate('jwt', {session: false}), (req, res) => {
     Users.find()
     .then( (users) => {
         res.status(201).json(users);
     })
     .catch( (err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Error: ', err});
     });
 });
 
 //Get user by username
 app.get('/users/:Username', passport.authenticate('jwt', {session: false}), (req, res) => {
-    Users.findOne( { Username: req.params.Username} )
+    Users.findOne( 
+        { Username: req.params.Username } 
+    )
     .then((user) => {
         if(!user) {
-            return res.status(404).send(req.params.Username + ' was not found.');
+            return res.status(404).json( {msg: 'The user ' + req.params.Username + ' was not found.'} );
         }
         else {
             res.json(user);
@@ -67,10 +74,9 @@ app.get('/users/:Username', passport.authenticate('jwt', {session: false}), (req
     })
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error ' + err);
+        res.status(500).json( {msg: 'Error: ', err});
     });
 });
-
 
 //Get all movies
 app.get('/movies', passport.authenticate('jwt', {session: false}), (req, res) => {
@@ -80,33 +86,38 @@ app.get('/movies', passport.authenticate('jwt', {session: false}), (req, res) =>
     })
     .catch( (err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Error: ', err});
     });
 });
 
 //Get movie by title
-app.get('/movies/title/:Title', (req, res) => {
-    Movies.findOne( {Title: req.params.Title} )
-    .then((movie) => {
-        if(movie) {
-            return res.status(404).send(req.params.Title + ' was not found.')
+app.get('/movies/:Title', passport.authenticate('jwt', {session: false}),
+async (req, res) => {
+    try {
+        const movieTitle = await Movies.findOne( {Title: req.params.Title} );
+        if(!movieTitle) {
+            return res.status(404).json( {msg: 'The movie ' + req.params.Title + ' was not found.'} );
         }
         else {
-            res.status(200).json(movie);
+            res.status(200).json(movieTitle);
         }
-    })
-    .catch((err) => {
-        console.error(err);
-        res.status(500).send('Error: ' + err);
-    });
+    }
+    catch(error) {
+        console.error(error);
+        res.status(500).json( {msg: 'Something went wrong...', error} );
+    }
 });
 
 //Get movie by genre
-app.get('/movies/genre/:Genre', (req, res) => {
-    Movies.find( {'Genre.Name': req.params.Genre} )
+app.get('/movies/genre/:Genre', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Movies.find( 
+        {
+            'Genre.Name': req.params.Genre
+        } 
+    )
     .then((movies) => {
         if(movies.length == 0) {
-            return res.status(404).send('There are no movies found with the ' + req.params.Genre + ' genre type.');
+            return res.status(404).json( { msg: 'There are no movies found with the ' + req.params.Genre + ' genre type.'} );
         }
         else {
             res.status(200).json(movies);
@@ -114,16 +125,20 @@ app.get('/movies/genre/:Genre', (req, res) => {
     })
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Error: ', err});
     });
 });
 
 //Get movie by director name
-app.get('/movies/directors/:Director', (req, res) => {
-    Movies.find( {'Director.Name': req.params.Director} )
+app.get('/movies/directors/:Director', passport.authenticate('jwt', {session: false}), (req, res) => {
+    Movies.find( 
+        {
+            'Director.Name': req.params.Director
+        } 
+    )
     .then((movies) => {
         if(movies.length == 0) {
-            return res.status(404).send('There are no movies found with the director ' + req.params.Director + ' name.');
+            return res.status(404).json( { msg: 'There are no movies found with the director ' + req.params.Director + ' name.'} );
         }
         else {
             res.status(200).json(movies);
@@ -131,7 +146,7 @@ app.get('/movies/directors/:Director', (req, res) => {
     })
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Error: ', err});
     });
 });
 
@@ -141,56 +156,58 @@ app.get('/movies/directors/:Director', (req, res) => {
 //CREATE
 
 //New user
-app.post('/users', [
-    check('Username', 'Username is required').isLength({min: 5}),
-    check('Username', 'Username contains non-alphanumeric characters - not allowed.').isAlphanumeric(),
+app.post('/users', 
+[
+    check('Username', 'Username is required').isLength( {min:4} ),
     check('Password', 'Password is required').not().isEmpty(),
-    check('Email', 'Email does not appear to be valid').isEmail()
+    check('Email', 'Email does not appear to be valid')
+    .not()
+    .isEmpty()
+    .withMessage('Email is required')
 ],
-    async (req, res) => {
-
+async (req, res) => {
     let errors = validationResult(req);
-        if(!errors.isEmpty()){
-            return res.status(422).json( {errors: errors.array()} )
-        };
+    if(!errors.isEmpty()){
+        return res.status(422).json( {errors: errors.array()} );
+    }
 
     let hashedPassword = Users.hashPassword(req.body.Password);
 
     try {
-        const existingUser = Users.findOne( {Username: req.body.Username} )
-            if(!existingUser) {
-                return res.status(400).json( {msg: 'User already exists.'} );
-            }
-                const user = await Users.create({
+        const existingUser = await Users.findOne( {Username: req.body.Username} );
+        if(existingUser){
+            return res.status(400).json( {msg: 'User ' + req.body.Username + ' already exists.'} );
+        }
+        else {
+            const newUser = await Users.create( 
+                {
                     Username: req.body.Username,
                     Password: hashedPassword,
                     Email: req.body.Email,
-                    Birthday: req.body.Birthday
-                })
-                res.status(201).json( {msg: 'User created', user} )
-    } 
-    catch (err) {
-        console.log(err);
-        res.status(500).json( {msg: 'Something went wrong.', err} )
+                    Birthday: req.body.Birthday,
+                }
+            );
+            res.status(201).json(newUser);
+        }
+    }
+    catch(error){
+        console.error(error);
+        res.status(500).json( {msg: 'Something went wrong...', error} );
     }
 });
 
 
 //Adding movie to user's favourite list
-app.post('/users/:Username/movies/:MovieID', async (req, res) => {
+app.post('/users/:Username/movies/:MovieID', passport.authenticate('jwt', {session: false}), async (req, res) => {
     var result = await Users.findOneAndUpdate( 
-        { 
-            Username: req.params.Username 
-        },
-        {
-            $push: { FavouriteMovies: req.params.MovieID }
-        },
+        { Username: req.params.Username },
+        { $push: { FavouriteMovies: req.params.MovieID } },
         { new: true, rawResult: true }
     )
     res.json( result)
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Something went wrong', err} )
     });
 });
 
@@ -200,23 +217,18 @@ app.post('/users/:Username/movies/:MovieID', async (req, res) => {
 //UPDATE
 
 //Updating user's information
-app.put('/users/:Username', async (req,res) => {
+app.put('/users/:Username', passport.authenticate('jwt', {session: false}), async (req,res) => {
     try {
         const updatedUser = await Users.findOneAndUpdate(
-            {
-                Username: req.body.Username
-            },
-            {
-                $set: {
+            { Username: req.body.Username },
+            { $set: 
+                {
                     Username: req.body.Username,
                     Password: req.body.Password,
                     Email: req.body.Email,
                     Birthday: req.body.Birthday
-                }
-            },
-            {
-                new: true
-            }
+                }},
+            { new: true }
         )
         res.status(200).json( {msg: 'User ' + req.body.Username + ' has been updated.', updatedUser})
     } catch (err) {
@@ -228,21 +240,15 @@ app.put('/users/:Username', async (req,res) => {
 //DELETE
 
 //Deleting movie from user's favourite list
-app.delete('/users/:Username/movies/:MovieID', (req, res) => {
+app.delete('/users/:Username/movies/:MovieID', passport.authenticate('jwt', {session: false}), (req, res) => {
     Users.findOneAndUpdate( 
-        {
-            Username: req.params.Username
-        },
-        {
-            $pull: {FavouriteMovies: req.params.MovieID},
-        },
-        {
-            new: true
-        }
+        { Username: req.params.Username },
+        { $pull: {FavouriteMovies: req.params.MovieID} },
+        { new: true }
     )
     .then((updatedUser) => {
         if(!updatedUser) {
-            return res.status(404).send('User was not found.');
+            return res.status(404).json( {msg: 'User was not found.'} );
         }
         else {
             res.status(updatedUser);
@@ -250,24 +256,26 @@ app.delete('/users/:Username/movies/:MovieID', (req, res) => {
     })
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error: ' + err);
+        res.status(500).json( {msg: 'Something went wrong', err} )
     });
 });
 
 //Deleting user
 app.delete('/users/:Username', (req, res) => {
-    Users.findOneAndRemove( { Username: req.params.Username } )
+    Users.findOneAndRemove( 
+        { Username: req.params.Username } 
+    )
     .then((user) => {
         if(!user) {
-            res.status(400).send(req.params.Username + ' was not found.');
+            res.status(400).json( {msg: 'The user ' + req.params.Username + ' was not found.'} );
         }
         else {
-            res.status(200).send(req.params.Username + ' has been deleted.');
+            res.status(200).json( {msg: 'The user ' + req.params.Username + ' has been deleted.'} );
         }
     })
     .catch((err) => {
         console.error(err);
-        res.status(500).send('Error ' + err);
+        res.status(500).json( {msg: 'Error: ', err} );
     });
 });
 
@@ -275,6 +283,6 @@ app.delete('/users/:Username', (req, res) => {
 
 
 
-app.listen(port, '0.0.0.0', () => {
-    console.log('Listening on port ' + port);
-});
+app.listen(port, 
+    console.log('Listening on port ' + port)
+);
