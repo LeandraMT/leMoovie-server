@@ -9,41 +9,38 @@ let Users = Models.User,
     ExtractJWT = passportJWT.ExtractJwt;
 
 
-
 passport.use(new localStrategy({
     usernameField: 'Username',
     passwordField: 'Password'
 },
-(username, password, callback) => {
-    console.log(username + ' ' + password);
-    Users.findOne( { Username: username }, (error, user) => {
-        if(error){
-            console.log(error);
-            return callback(error);
+async (username, password, done) => {
+    try {
+        const user = await Users.findOne( {Username: username} );
+        if(!user) {
+            return done(null, false, {msg: 'Incorrect username or password.'} );
         }
-        if(!user){
-            console.log('Incorrect username');
-            return callback(null, false, {message: 'Incorrect username or password.'});
+        if(!user.validatePassword(password)) {
+            return done(null, false, {msg: 'Incorrect password.'} );
         }
-        if (!user.validatePassword(password)){
-            console.log('Incorrect password');
-            return callback(null, false, {msg: 'Incorrect password.'});
-        }
-        console.log('finished');
-        return callback(null, user);
-    });
+
+        return done(null, user);
+    }
+    catch(error) {
+        return done(error);
+    }
 }));
+
 
 passport.use(new JWTstrategy({
     jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
     secretOrKey: 'your_jwt_secret'
 },
-(jwtPayload, callback) => {
+(jwtPayload, done) => {
     return Users.findById(jwtPayload._id)
     .then((user) => {
-        return callback(null, user);
+        return done(null, user);
     })
     .catch((error) => {
-        return callback(error)
+        return done(error)
     });
 }));

@@ -1,7 +1,9 @@
 const jwtSecret = 'your_jwt_secret';
+const { Router } = require('express');
 const jwt = require('jsonwebtoken'),
     passport = require('passport');
 
+//Local passport file
 require('./passport');
 
 
@@ -19,23 +21,24 @@ let generateJwtToken = (user) => {
 
 //POST Login
 module.exports = (router) => {
-    router.post('/login', (req, res) => {
-        passport.authenticate('local', {session: false},
-        (error, user, info) => {
-            if(error || !user) {
-                return res.status(400).json({
-                    message: 'Something went wrong.',
-                    user: user
-                });
-            }
-            req.login(user, {session: false},
-                (error) => {
-                    if(error) {
-                        res.send(error);
+    router.post('/login', async (req, res) => {
+        try {
+            const user = await new Promise( (resolve, reject) => {
+                passport.authenticate('local', {session: false}, (error, user, info) => {
+                    if(error || !user) {
+                        console.log(error);
+                        reject(error || new Error('Something is not right...'));
                     }
-                    let token = generateJwtToken(user.toJSON());
-                    return res.json( {user, token} );
-                });
-        })(req, res);
+                    else {
+                        resolve(user);
+                    }
+                })(req, res);
+            });
+            let token = generateJwtToken(user.toJSON());
+            return res.json( {user, token} );
+        }
+        catch(error) {
+            return res.status(400).json( {msg: error.message,});
+        }
     });
-}
+};
