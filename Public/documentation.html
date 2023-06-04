@@ -87,7 +87,7 @@
 
                 <tr>
                     <td>Provides data about the genre of each movie</td>
-                    <td>/movies/genre/:title</td>
+                    <td>/movies/genre/:Genre</td>
                     <td>GET</td>
                     <td>none</td>
                     <td>JSON Object with data about the genre and its description</td>
@@ -95,7 +95,7 @@
 
                 <tr>
                     <td>Provides data of the director</td>
-                    <td>/movies/directors/:name</td>
+                    <td>/movies/directors/:Director</td>
                     <td>GET</td>
                     <td>none</td>
                     <td>JSON Object with information of the director of each movie</td>
@@ -112,14 +112,14 @@
                 <tr>
                     <td>Allows users to make changes/updates to their profiles</td>
                     <td>/users/:username</td>
-                    <td>POST</td>
+                    <td>PUT</td>
                     <td>none</td>
                     <td>JSON Object with data on the changes/updates made</td>
                 </tr>
 
                 <tr>
                     <td>Allow users to add movie to a list of favourites</td>
-                    <td>/users/:username/:movies/:movieID</td>
+                    <td>/users/:Username/movies/:MovieID</td>
                     <td>POST</td>
                     <td>none</td>
                     <td>JSON Object providing data with the newly added movie</td>
@@ -127,7 +127,7 @@
 
                 <tr>
                     <td>Allows users to remove a movie from their list of favourites</td>
-                    <td>/users/:username/:movies/:movieID</td>
+                    <td>/users/:Username/movies/:MovieID</td>
                     <td>DELETE</td>
                     <td>none</td>
                     <td>Text message confirming the movie has been removed</td>
