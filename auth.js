@@ -22,10 +22,11 @@ let generateJwtToken = (user) => {
 //POST Login
 module.exports = (router) => {
     router.post('/login', async (req, res) => {
+        console.log(req.body);
         try {
-            const user = await new Promise( (resolve, reject) => {
-                passport.authenticate('local', {session: false}, (error, user, info) => {
-                    if(error || !user) {
+            const user = await new Promise((resolve, reject) => {
+                passport.authenticate('local', { session: false }, (error, user, info) => {
+                    if (error || !user) {
                         console.log(error);
                         reject(error || new Error('Something is not right...'));
                     }
@@ -35,10 +36,10 @@ module.exports = (router) => {
                 })(req, res);
             });
             let token = generateJwtToken(user.toJSON());
-            return res.json( {user, token} );
+            return res.json({ user, token });
         }
-        catch(error) {
-            return res.status(400).json( {msg: error.message,});
+        catch (error) {
+            return res.status(400).json({ msg: error.message, });
         }
     });
 };
