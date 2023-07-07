@@ -229,6 +229,7 @@ app.post('/users/:Username/movies/:MovieID', passport.authenticate('jwt', { sess
             console.error(err);
             res.status(500).json({ msg: 'Something went wrong', err })
         });
+    console.log(result);
 });
 
 
@@ -273,7 +274,7 @@ app.delete('/users/:Username/movies/:MovieID', passport.authenticate('jwt', { se
                 return res.status(404).json({ msg: 'User was not found.' });
             }
             else {
-                res.status(updatedUser);
+                res.json(updatedUser);
             }
         })
         .catch((err) => {
