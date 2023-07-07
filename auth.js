@@ -22,7 +22,8 @@ let generateJwtToken = (user) => {
 //POST Login
 module.exports = (router) => {
     router.post('/login', async (req, res) => {
-        console.log(req.body);
+        console.log("Request: ", req);
+        console.log("Response ", res);
         try {
             const user = await new Promise((resolve, reject) => {
                 passport.authenticate('local', { session: false }, (error, user, info) => {
