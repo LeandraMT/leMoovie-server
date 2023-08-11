@@ -30,7 +30,7 @@ require('./passport');
 const port = process.env.PORT || 8000;
 
 //CORS POLICY
-let allowedOrigins = ['http://localhost:8080', 'http://localhost:1234'];
+let allowedOrigins = ['http://localhost:8080', 'http://localhost:1234', 'https://le-moovie.herokuapp.com', 'https://lemoovie.netlify.app'];
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
